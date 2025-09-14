@@ -10,7 +10,7 @@ welcomeRoute.get("/", (req, res) => {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>TSGB API Server</title>
+      <title>Car Shop Managements Server</title>
       <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet" />
       <style>
        * {
@@ -372,15 +372,15 @@ welcomeRoute.get("/", (req, res) => {
       </ul>
       <div class="container">
         <div class="status">SERVER RUNNING</div>
-        <h1>TSGB API Server</h1>
+        <h1>Car Shop Managements Server</h1>
         <div class="subtitle">Official Backend API</div>
         <div class="divider"></div>
         <div class="now-time" id="now-time">Loading time...</div>
         <div class="cta-row">
-          <a href="https://ts-geosystems.com.bd" class="cta-button" target="_blank" rel="noopener">Discover Our Solutions</a>
+          <a href="https://car-shop-management.vercel.app" class="cta-button" target="_blank" rel="noopener">Discover Our Solutions</a>
         </div>
         <div class="footer">
-          &copy; ${currentYear} TSGB. All rights reserved.
+          &copy; ${currentYear} Car Shop. All rights reserved.
           <br />
           <span class="footer-names">
           Made with ❤️ by
