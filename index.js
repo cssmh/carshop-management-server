@@ -18,11 +18,13 @@ app.use("/uploads", express.static("uploads"));
 const localhostPort1 = 5173;
 const localhostPort2 = 5174;
 const localhostPort3 = 3000;
+const localhostPort4 = 3001;
 
 const allowedOrigins = [
   `http://localhost:${localhostPort1}`,
   `http://localhost:${localhostPort2}`,
   `http://localhost:${localhostPort3}`,
+  `http://localhost:${localhostPort4}`,
   `https://car-shop-management.vercel.app`,
   `https://www.car-shop-management.vercel.app`,
 ];
