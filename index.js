@@ -23,10 +23,8 @@ const allowedOrigins = [
   `http://localhost:${localhostPort1}`,
   `http://localhost:${localhostPort2}`,
   `http://localhost:${localhostPort3}`,
-  `https://ts-geosystems.com.bd`,
-  `https://www.ts-geosystems.com.bd`,
-  `https://admin.ts-geosystems.com.bd`,
-  `https://www.admin.ts-geosystems.com.bd`,
+  `https://car-shop-management.vercel.app/`,
+  `https://www.car-shop-management.vercel.app/`,
 ];
 
 app.use(
