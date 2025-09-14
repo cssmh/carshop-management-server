@@ -384,7 +384,7 @@ welcomeRoute.get("/", (req, res) => {
           <br />
           <span class="footer-names">
           Made with ❤️ by
-          <a href="https://www.linkedin.com/in/momin-dev" target="_blank" rel="noopener noreferrer">Md. Momin Hossain</a>
+          <a href="https://www.linkedin.com/in/mominalways" target="_blank" rel="noopener noreferrer">Md. Momin Hossain</a>
           &amp; <a href="https://www.linkedin.com/in/swapnilahmedshishir" target="_blank" rel="noopener noreferrer">Swapnil Ahmmed Shishir</a>
           </span>
         </div>
