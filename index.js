@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import bodyParser from "body-parser";
 import welcomeRoute from "./View/Welcome/welcomeRoute.js";
+import authRoutes from "./Routes/auth.js";
 
 dotenv.config();
 const app = express();
@@ -39,10 +40,12 @@ app.use(
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
+// Welcome route
 app.use("/", welcomeRoute);
+// auth route
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`Server is running where http://localhost:${PORT}`);
+  console.log(`Server is running where ✅ http://localhost:${PORT}`);
 });
