@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -6,7 +7,6 @@ import bodyParser from "body-parser";
 import welcomeRoute from "./View/Welcome/welcomeRoute.js";
 import authRoutes from "./Routes/auth.js";
 
-dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
