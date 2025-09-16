@@ -121,9 +121,50 @@ export const login = async (req, res) => {
   }
 };
 
+// export async function me(req, res) {
+//   console.log(req.user);
+
+//   // auth middleware already set req.user
+//   return res.json({ user: req.user });
+// }
+
 export async function me(req, res) {
-  // auth middleware already set req.user
-  return res.json({ user: req.user });
+  try {
+    const userReq = req.user;
+    const { id, tenantId } = userReq;
+
+    // fetch user info from DB
+    const [users] = await db.query(
+      `SELECT id, first_name, last_name, email, phone, is_active, role 
+       FROM users 
+       WHERE id = ? AND tenant_id = ? LIMIT 1`,
+      [id, tenantId]
+    );
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = users[0];
+    console.log(user);
+
+    // return clean user object
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        phone: user.phone,
+        is_active: user.is_active,
+        role: user.role,
+        tenantId,
+      },
+    });
+  } catch (err) {
+    console.error("me() error:", err);
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
 }
 
 export const logout = async (req, res) => {
