@@ -57,6 +57,7 @@ export const login = async (req, res) => {
 
     if (!tenants || tenants.length === 0)
       return res.status(400).json({ message: "Tenant not found" });
+
     const tenant = tenants[0];
 
     // find user under that tenant
@@ -86,6 +87,14 @@ export const login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    // if token created token then update the token
+    if (token) {
+      await db.query(
+        `UPDATE users SET token = ? WHERE email = ? AND id = ? AND tenant_id = ?  LIMIT 1`,
+        [token, email, user.id, tenant.id]
+      );
+    }
+
     // Set the token as a cookie
     res.cookie("auth_token", token, {
       httpOnly: true,
@@ -102,6 +111,7 @@ export const login = async (req, res) => {
         role: user.role,
         tenantId: user.tenant_id,
       },
+      token: token,
     });
   } catch (err) {
     console.error(err);
@@ -115,3 +125,24 @@ export async function me(req, res) {
   // auth middleware already set req.user
   return res.json({ user: req.user });
 }
+
+export const logout = async (req, res) => {
+  try {
+    const token = req.cookies.auth_token;
+    if (token) {
+      // remove token from DB
+      await db.query(`UPDATE users SET token = NULL WHERE token = ?`, [token]);
+    }
+
+    res.clearCookie("auth_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    });
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Logout error" });
+  }
+};
