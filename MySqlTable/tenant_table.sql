@@ -1,28 +1,73 @@
+-- Drop all tables in correct order (respecting foreign keys)
+DROP TABLE IF EXISTS user_shops;
+DROP TABLE IF EXISTS user_tenants;
+DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS inventory_items;
+DROP TABLE IF EXISTS vendors;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS shops;
+DROP TABLE IF EXISTS tenants;
+
+-- Now recreate all tables with correct structure
 -- 1) Tenant Table (multi-tenant shops)
 CREATE TABLE tenants (
-    id CHAR(36) PRIMARY KEY,               -- UUIDv7
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
-    domain VARCHAR(150),                   -- optional custom domain
+    domain VARCHAR(150),
     status ENUM('active','suspended') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2) Users (Admin, Staff, Mechanic, Vendor, Customer)
+-- 2) Users Table (Fixed)
 CREATE TABLE users (
-    id CHAR(36) PRIMARY KEY,               -- UUIDv7
-    tenant_id CHAR(36) NOT NULL,
-    role ENUM('admin','staff','mechanic','vendor','customer') NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    role ENUM('global','admin','staff','mechanic','vendor','customer') NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     phone VARCHAR(50),
     is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3) Shops Table
+CREATE TABLE shops (
+    id CHAR(36) PRIMARY KEY,
+    tenant_id CHAR(36) NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    address JSON,
+    phone VARCHAR(50),
+    status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
--- 3) Customers
+-- 4) User-Tenant Mapping Table
+CREATE TABLE user_tenants (
+    user_id CHAR(36) NOT NULL,
+    tenant_id CHAR(36) NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, tenant_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+);
+
+-- 5) User-Shop Mapping Table
+CREATE TABLE user_shops (
+    user_id CHAR(36) NOT NULL,
+    shop_id CHAR(36) NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, shop_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+);
+
+-- 6) Other tables...
 CREATE TABLE customers (
     id CHAR(36) PRIMARY KEY,
     tenant_id CHAR(36) NOT NULL,
@@ -46,13 +91,14 @@ CREATE TABLE customers (
     facebook VARCHAR(150),
     instagram VARCHAR(150),
     x_handle VARCHAR(150),
-    address JSON,                           -- store multiple addresses (home, billing, shipping)
+    address JSON,
     remarks TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
--- 4) Vendors / Suppliers
+
+-- 7) Vendors / Suppliers
 CREATE TABLE vendors (
     id CHAR(36) PRIMARY KEY,
     tenant_id CHAR(36) NOT NULL,
@@ -82,7 +128,7 @@ CREATE TABLE vendors (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
--- 5) Inventory Items
+-- 8) Inventory Items
 CREATE TABLE inventory_items (
     id CHAR(36) PRIMARY KEY,
     tenant_id CHAR(36) NOT NULL,
@@ -112,7 +158,7 @@ CREATE TABLE inventory_items (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
--- 6) Roles & Permissions (for Admin Panel RBAC)
+-- 9) Roles & Permissions (for Admin Panel RBAC)
 CREATE TABLE roles (
     id CHAR(36) PRIMARY KEY,
     tenant_id CHAR(36) NOT NULL,
@@ -122,7 +168,7 @@ CREATE TABLE roles (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
--- 7) Subscriptions (for multi-tenant billing)
+-- 10) Subscriptions (for multi-tenant billing)
 CREATE TABLE subscriptions (
     id CHAR(36) PRIMARY KEY,
     tenant_id CHAR(36) NOT NULL,
@@ -136,27 +182,26 @@ CREATE TABLE subscriptions (
 
 
 -- Meaualy user add 
+-- Insert sample tenant
+INSERT INTO tenants (id, name, domain, status)
+VALUES ('975e971c-dc14-46f9-bfd7-80e0e3738cd0', 'My Car Shop', 'mycarshop', 'active');
 
--- Tenant Insert
-INSERT INTO tenants (id, name, domain, status, created_at)
-VALUES (
-  '975e971c-dc14-46f9-bfd7-80e0e3738cd0', -- tenantId (UUID, চাইলে change করতে পারো)
-  'My Shop Demo',
-  'myshop',
-  'active',
-  NOW()
-);
+-- Insert sample shops
+INSERT INTO shops (id, tenant_id, name, address, phone, status)
+VALUES 
+    ('shop-0001', '975e971c-dc14-46f9-bfd7-80e0e3738cd0', 'Main Branch', '{"city": "New York", "street": "123 Main St"}', '123-456-7890', 'active'),
+    ('shop-0002', '975e971c-dc14-46f9-bfd7-80e0e3738cd0', 'Downtown Branch', '{"city": "New York", "street": "456 Broadway"}', '123-456-7891', 'active');
 
--- Admin User Insert (password = "admin123")
-INSERT INTO users (id, tenant_id, role, email, password_hash, first_name, last_name, is_active, created_at)
-VALUES (
-  '43887ff0-0ba4-4033-add2-22021477a88a', -- adminId (UUID)
-  '975e971c-dc14-46f9-bfd7-80e0e3738cd0', -- tenantId (উপরেরটার সাথে match করতে হবে)
-  'admin',
-  'admin@myshop.com',
-  '$2a$10$5P/3uZKORpQFx4F5OtwuEO5Aj9p8T4VqjA08aqprOLR5w6tqQihyq', -- bcrypt hash of "admin123"
-  'Admin',
-  'MyShop',
-  1,
-  NOW()
-);
+-- Insert global admin user
+INSERT INTO users (id, role, email, password_hash, first_name, last_name, is_active)
+VALUES ('user-0001', 'global', 'global@mycarshop.com', '$2b$10$byBtgaCCP3QtKsqcc9SXeuRs/W1s1S0jd.X.whbzKAnKLh5j1vKFy', 'Global', 'Admin', 1);
+
+-- Map user to tenant
+INSERT INTO user_tenants (user_id, tenant_id, is_default)
+VALUES ('user-0001', '975e971c-dc14-46f9-bfd7-80e0e3738cd0', TRUE);
+
+-- Map user to shops
+INSERT INTO user_shops (user_id, shop_id, is_default)
+VALUES 
+    ('user-0001', 'shop-0001', TRUE),
+    ('user-0001', 'shop-0002', FALSE);

@@ -13,5 +13,6 @@ router.post("/register-tenant", registerTenant);
 router.post("/login", login);
 router.get("/me", verifyAuth, me);
 router.post("/logout", logout);
+// router.post("/add-user", verifyAuth, addUser);
 
 export default router;
