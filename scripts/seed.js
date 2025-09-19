@@ -40,12 +40,6 @@ async function seed() {
     );
 
     await conn.commit();
-    console.log("Seed done. tenant:", {
-      tenantId,
-      tenantSlug: "myshop",
-      adminEmail: "admin@myshop.com",
-      adminPassword: "admin123",
-    });
   } catch (err) {
     await conn.rollback();
     console.error("Seed failed:", err);

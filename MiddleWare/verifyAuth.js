@@ -10,12 +10,21 @@ export const verifyAuth = async (req, res, next) => {
     // First decode the token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    // Check if this token exists in DB
+    // Extract all data from token
+    const { userId, userEmail, tenantId, shopId, role } = decoded;
+
+    // Validate required fields
+    if (!userId || !userEmail || !role) {
+      return res.status(401).json({ message: "Invalid token format" });
+    }
+
+    // Check if user exists and is active
     const [users] = await db.query(
-      `SELECT id, tenant_id, role, token 
+      `SELECT id, email, role, token, first_name, last_name, is_active 
        FROM users 
-       WHERE id = ? AND tenant_id = ? LIMIT 1`,
-      [decoded.userId, decoded.tenantId]
+       WHERE id = ? AND email = ? AND is_active = 1 
+       LIMIT 1`,
+      [userId, userEmail]
     );
 
     if (!users || users.length === 0) {
@@ -34,21 +43,73 @@ export const verifyAuth = async (req, res, next) => {
       return res.status(401).json({ message: "Session expired, please login" });
     }
 
-    // Attach user info to request
+    // Validate tenant access if tenantId is provided
+    if (tenantId) {
+      const [userTenants] = await db.query(
+        `SELECT ut.user_id 
+         FROM user_tenants ut 
+         JOIN tenants t ON ut.tenant_id = t.id 
+         WHERE ut.user_id = ? AND ut.tenant_id = ? AND t.status = 'active' 
+         LIMIT 1`,
+        [userId, tenantId]
+      );
+
+      if (!userTenants || userTenants.length === 0) {
+        return res.status(403).json({
+          message: "Access denied to selected tenant",
+        });
+      }
+    }
+
+    // Validate shop access if shopId is provided
+    if (shopId) {
+      const [userShops] = await db.query(
+        `SELECT us.user_id 
+         FROM user_shops us 
+         JOIN shops s ON us.shop_id = s.id 
+         WHERE us.user_id = ? AND us.shop_id = ? AND s.status = 'active' 
+         LIMIT 1`,
+        [userId, shopId]
+      );
+
+      if (!userShops || userShops.length === 0) {
+        return res.status(403).json({
+          message: "Access denied to selected shop",
+        });
+      }
+    }
+
+    // Attach comprehensive user info to request
     req.user = {
-      id: user.id,
-      tenantId: user.tenant_id,
+      userId: user.id,
+      userEmail: user.email,
       role: user.role,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      tenantId: tenantId || null,
+      shopId: shopId || null,
     };
 
     next();
   } catch (err) {
     console.error("verifyAuth error:", err.message);
+    // Clear cookie on any error
     res.clearCookie("auth_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     });
-    return res.status(401).json({ message: "Invalid or expired token" });
+
+    if (err.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Token expired, please login again" });
+    } else if (err.name === "JsonWebTokenError") {
+      return res
+        .status(401)
+        .json({ message: "Invalid token, please login again" });
+    } else {
+      return res.status(401).json({ message: "Authentication failed" });
+    }
   }
 };

@@ -66,7 +66,6 @@ export const registerTenant = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  // const { email, password, tenantIdentifier } = req.body;
   const { email, password, tenantIdentifier, shopId } = req.body;
 
   if (!email || !password) {
@@ -218,9 +217,11 @@ async function completeLogin(user, tenantId, shopId, res) {
     const token = jwt.sign(
       {
         userId: user.id,
+        userEmail: user.email,
         tenantId: tenantId,
         shopId: shopId,
         role: user.role,
+        iat: Math.floor(Date.now() / 1000), // Issued at
       },
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "1d" }
@@ -229,11 +230,11 @@ async function completeLogin(user, tenantId, shopId, res) {
     // if token created token then update the token
     if (token) {
       await db.query(
-        `UPDATE users SET token = ? WHERE email = ? AND id = ?   LIMIT 1`,
-        [token, user.email, user.id]
+        `UPDATE users SET token = ? WHERE id = ? AND email = ?   LIMIT 1`,
+        [token, user.id, user.email]
       );
     }
-
+    // Set secure cookie
     res.cookie("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -246,6 +247,7 @@ async function completeLogin(user, tenantId, shopId, res) {
         id: user.id,
         first_name: user.first_name,
         last_name: user.last_name,
+        email: user.email,
         role: user.role,
         tenantId: tenantId,
         shopId: shopId,
@@ -265,15 +267,15 @@ async function completeLogin(user, tenantId, shopId, res) {
 export async function me(req, res) {
   try {
     const userReq = req.user;
-    const { userId, tenantId, shopId } = userReq;
+    const { userId, tenantId, shopId, userEmail, role } = userReq;
 
     // Fetch user info from DB with tenant and shop details
     const [users] = await db.query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.is_active, u.role
        FROM users u
-       WHERE u.id = ?
+       WHERE u.id = ? AND u.email = ?
        LIMIT 1`,
-      [userId]
+      [userId, userEmail]
     );
 
     if (!users || users.length === 0) {
@@ -282,30 +284,48 @@ export async function me(req, res) {
 
     const user = users[0];
 
-    // Get tenant info
-    const [tenants] = await db.query(`SELECT name FROM tenants WHERE id = ?`, [
-      tenantId,
-    ]);
+    // Prepare response object
+    const responseData = {
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      phone: user.phone,
+      is_active: user.is_active,
+      role: user.role,
+    };
 
-    // Get shop info
-    const [shops] = await db.query(`SELECT name FROM shops WHERE id = ?`, [
-      shopId,
-    ]);
+    // Get tenant info if tenantId exists
+    if (tenantId) {
+      const [tenants] = await db.query(
+        `SELECT name, domain FROM tenants WHERE id = ?`,
+        [tenantId]
+      );
+
+      if (tenants && tenants.length > 0) {
+        responseData.tenantId = tenantId;
+        responseData.tenant_name = tenants[0].name;
+        responseData.tenant_domain = tenants[0].domain;
+      }
+    }
+
+    // Get shop info if shopId exists
+    if (shopId) {
+      const [shops] = await db.query(
+        `SELECT name, address, phone FROM shops WHERE id = ?`,
+        [shopId]
+      );
+
+      if (shops && shops.length > 0) {
+        responseData.shopId = shopId;
+        responseData.shop_name = shops[0].name;
+        responseData.shop_address = shops[0].address;
+        responseData.shop_phone = shops[0].phone;
+      }
+    }
 
     return res.status(200).json({
-      user: {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        phone: user.phone,
-        is_active: user.is_active,
-        role: user.role,
-        tenantId,
-        shopId,
-        tenant_name: tenants[0]?.name,
-        shop_name: shops[0]?.name,
-      },
+      user: responseData,
     });
   } catch (err) {
     console.error("me() error:", err);
@@ -316,9 +336,14 @@ export async function me(req, res) {
 export const logout = async (req, res) => {
   try {
     const token = req.cookies.auth_token;
-    if (token) {
-      // remove token from DB
-      await db.query(`UPDATE users SET token = NULL WHERE token = ?`, [token]);
+    const userId = req.user?.userId;
+
+    if (token && userId) {
+      // Clear token from database for specific user
+      await db.query(
+        `UPDATE users SET token = NULL WHERE id = ? AND token = ? LIMIT 1`,
+        [userId, token]
+      );
     }
 
     res.clearCookie("auth_token", {
