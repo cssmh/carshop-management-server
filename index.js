@@ -6,6 +6,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import welcomeRoute from "./View/Welcome/welcomeRoute.js";
 import authRoutes from "./Routes/auth.js";
+import customersRouter from "./Routes/customerRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -44,6 +45,9 @@ app.use(bodyParser.json());
 app.use("/", welcomeRoute);
 // auth route
 app.use("/api/auth", authRoutes);
+
+// /api/customers
+app.use("/api/customers", customersRouter);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
