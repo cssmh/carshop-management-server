@@ -266,9 +266,11 @@ export const listCustomers = async (req, res) => {
   const safeSort = allowedSort.has(sort) ? sort : "created_at";
   const safeOrder = order?.toLowerCase() === "asc" ? "ASC" : "DESC";
   const offset = (parseInt(page) - 1) * parseInt(limit);
+  const searchLimit = Math.min(parseInt(limit), 100); // Cap limit at 100
 
   const params = [tenantId];
   let where = "c.tenant_id = ? AND c.deleted_at IS NULL";
+  let useFullText = false;
 
   if (status) {
     where += " AND c.status = ?";
@@ -278,12 +280,26 @@ export const listCustomers = async (req, res) => {
     where += " AND c.type = ?";
     params.push(type);
   }
+
+  // Enhanced search logic
   if (q) {
-    where +=
-      " AND (c.first_name LIKE ? OR c.last_name LIKE ? OR c.email LIKE ? OR c.business_name LIKE ?)";
-    const like = `%${q}%`;
-    params.push(like, like, like, like);
+    const searchTerm = q.trim();
+
+    // Use full-text search for longer queries (better performance)
+    if (searchTerm.length >= 3) {
+      useFullText = true;
+      where +=
+        " AND MATCH(c.first_name, c.last_name, c.email, c.business_name) AGAINST(? IN BOOLEAN MODE)";
+      params.push(`+${searchTerm}*`); // Prefix search with boolean mode
+    } else {
+      // Use LIKE for shorter queries
+      where +=
+        " AND (c.first_name LIKE ? OR c.last_name LIKE ? OR c.email LIKE ?)";
+      const like = `${searchTerm}%`; // Prefix search is faster than %term%
+      params.push(like, like, like);
+    }
   }
+
   if (vehicleVin) {
     where +=
       " AND EXISTS (SELECT 1 FROM customer_vehicles v WHERE v.customer_id = c.id AND v.vin = ?)";
@@ -295,53 +311,74 @@ export const listCustomers = async (req, res) => {
     params.push(tag);
   }
 
+  // Optimized query - only fetch necessary fields for listing
   const sql = `
     SELECT 
       c.id, c.first_name, c.last_name, c.email, c.mobile, c.status, c.type,
-      c.business_name, c.profile_picture_path, c.created_at,
-      GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ',') AS tags
+      c.business_name, c.profile_picture_path, c.created_at
     FROM customers c
-    LEFT JOIN customer_tags ct ON ct.customer_id = c.id
-    LEFT JOIN tags t ON t.id = ct.tag_id
     WHERE ${where}
-    GROUP BY c.id
     ORDER BY c.${safeSort} ${safeOrder}
     LIMIT ? OFFSET ?
   `;
-  params.push(parseInt(limit), offset);
+  params.push(searchLimit, offset);
 
-  const countSql = `SELECT COUNT(*) as total FROM customers c WHERE ${where}`;
+  // Optimized count query
+  const countSql = `
+    SELECT COUNT(*) as total 
+    FROM customers c 
+    WHERE ${where}
+  `;
+
   try {
     const conn = await db.getConnection();
     try {
-      const [[countRow]] = await conn.query(
-        countSql,
-        params.slice(0, params.length - 2)
-      );
-      const [rows] = await conn.query(sql, params);
+      // Use Promise.all for parallel execution
+      const [countResult, dataResult] = await Promise.all([
+        conn.query(countSql, params.slice(0, params.length - 2)),
+        conn.query(sql, params),
+      ]);
+
+      const [[countRow]] = countResult;
+      const [rows] = dataResult;
+
+      // Enhanced response with performance hints
       res.json({
         page: parseInt(page),
-        limit: parseInt(limit),
+        limit: searchLimit,
         total: countRow.total,
+        searchTerm: q || null,
+        searchMethod: useFullText ? "fulltext" : "like",
         data: rows.map((r) => ({
           id: r.id,
           name: `${r.first_name} ${r.last_name}`,
+          firstName: r.first_name,
+          lastName: r.last_name,
           email: r.email,
           mobile: r.mobile,
           status: r.status,
           type: r.type,
           businessName: r.business_name,
           profilePicture: r.profile_picture_path,
-          tags: r.tags ? r.tags.split(",") : [],
           createdAt: r.created_at,
         })),
+        performance: {
+          cached: false, // You can add Redis caching here
+          queryTime: Date.now(), // You can measure actual query time
+        },
       });
     } finally {
       conn.release();
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error("Customer search error:", err);
+    res.status(500).json({
+      message: "Search failed",
+      error:
+        process.env.NODE_ENV === "development"
+          ? err.message
+          : "Internal server error",
+    });
   }
 };
 

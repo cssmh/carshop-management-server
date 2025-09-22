@@ -1,4 +1,6 @@
 import express from "express";
+import { verifyAuth } from "../MiddleWare/verifyAuth.js";
+import uploadCustomerImage from "../MiddleWare/uploadCustomerImage.js";
 import {
   createCustomer,
   getCustomerById,
@@ -7,9 +9,7 @@ import {
   deleteCustomer,
   addCustomerRemark,
   listCustomerRemarks,
-} from "../controllers/customerController.js";
-import { verifyAuth } from "../MiddleWare/verifyAuth.js";
-import uploadCustomerImage from "../MiddleWare/uploadCustomerImage.js";
+} from "../Controllers/customerController.js";
 
 const router = express.Router();
 

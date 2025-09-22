@@ -221,7 +221,6 @@ async function completeLogin(user, tenantId, shopId, res) {
         tenantId: tenantId,
         shopId: shopId,
         role: user.role,
-        iat: Math.floor(Date.now() / 1000), // Issued at
       },
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "1d" }
