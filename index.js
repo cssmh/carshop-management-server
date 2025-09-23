@@ -7,6 +7,8 @@ import bodyParser from "body-parser";
 import welcomeRoute from "./View/Welcome/welcomeRoute.js";
 import authRoutes from "./Routes/auth.js";
 import customersRouter from "./Routes/customerRoutes.js";
+import shopRoutes from "./Routes/shopRoutes.js";
+import vehicleLocationRoutes from "./Routes/vehicleLocationRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -48,6 +50,10 @@ app.use("/api/auth", authRoutes);
 
 // /api/customers
 app.use("/api/customers", customersRouter);
+// Shop routes
+app.use("/api", shopRoutes);
+// vehicleLocationRoutes
+app.use("/api", vehicleLocationRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
