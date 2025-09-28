@@ -10,6 +10,10 @@ import customersRouter from "./Routes/customerRoutes.js";
 import shopRoutes from "./Routes/shopRoutes.js";
 import vehicleLocationRoutes from "./Routes/vehicleLocationRoutes.js";
 import carRouter from "./Routes/carRoutes.js";
+import tenantRoutes from "./Routes/tenantRoutes.js";
+import roleRoutes from "./Routes/roleRoutes.js";
+import userRoutes from "./Routes/userRoutes.js";
+import globalShopRoutes from "./Routes/globalShopRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -48,7 +52,8 @@ app.use(bodyParser.json());
 app.use("/", welcomeRoute);
 // auth route
 app.use("/api/auth", authRoutes);
-
+// Add to your existing routes
+app.use("/api", tenantRoutes);
 // /api/customers
 app.use("/api/customers", customersRouter);
 // Shop routes
@@ -58,6 +63,15 @@ app.use("/api", vehicleLocationRoutes);
 
 // All car endpoints
 app.use("/api", carRouter);
+
+// All user creats routes
+app.use("/api", userRoutes);
+
+// All global shop routes
+app.use("/api", globalShopRoutes);
+
+// Add to your existing routes
+app.use("/api", roleRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

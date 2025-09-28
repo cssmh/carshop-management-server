@@ -67,6 +67,18 @@ CREATE TABLE user_shops (
     FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
 );
 
+
+-- 9) Roles & Permissions (for Admin Panel RBAC)
+CREATE TABLE roles (
+    id CHAR(36) PRIMARY KEY,
+    tenant_id CHAR(36) NOT NULL,
+    name VARCHAR(50) NOT NULL,              -- e.g. Admin, Cashier, Mechanic
+    permissions JSON,                       -- store as JSON array
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+);
+
+
 -- 6) Other tables...
 CREATE TABLE customers (
     id CHAR(36) PRIMARY KEY,
@@ -158,15 +170,6 @@ CREATE TABLE inventory_items (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
--- 9) Roles & Permissions (for Admin Panel RBAC)
-CREATE TABLE roles (
-    id CHAR(36) PRIMARY KEY,
-    tenant_id CHAR(36) NOT NULL,
-    name VARCHAR(50) NOT NULL,              -- e.g. Admin, Cashier, Mechanic
-    permissions JSON,                       -- store as JSON array
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
-);
 
 -- 10) Subscriptions (for multi-tenant billing)
 CREATE TABLE subscriptions (
