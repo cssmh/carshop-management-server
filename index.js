@@ -9,6 +9,7 @@ import authRoutes from "./Routes/auth.js";
 import customersRouter from "./Routes/customerRoutes.js";
 import shopRoutes from "./Routes/shopRoutes.js";
 import vehicleLocationRoutes from "./Routes/vehicleLocationRoutes.js";
+import towingRoutes from "./Routes/Form/towingRoute.js";
 
 const app = express();
 app.use(express.json());
@@ -54,6 +55,8 @@ app.use("/api/customers", customersRouter);
 app.use("/api", shopRoutes);
 // vehicleLocationRoutes
 app.use("/api", vehicleLocationRoutes);
+// form 
+app.use("/api", towingRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
