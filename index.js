@@ -9,6 +9,7 @@ import authRoutes from "./Routes/auth.js";
 import customersRouter from "./Routes/customerRoutes.js";
 import shopRoutes from "./Routes/shopRoutes.js";
 import vehicleLocationRoutes from "./Routes/vehicleLocationRoutes.js";
+import towingRoutes from "./Routes/Form/towingRoute.js";
 import carRouter from "./Routes/carRoutes.js";
 import tenantRoutes from "./Routes/tenantRoutes.js";
 import roleRoutes from "./Routes/roleRoutes.js";
@@ -60,6 +61,8 @@ app.use("/api/customers", customersRouter);
 app.use("/api", shopRoutes);
 // vehicleLocationRoutes
 app.use("/api", vehicleLocationRoutes);
+// form 
+app.use("/api", towingRoutes);
 
 // All car endpoints
 app.use("/api", carRouter);
