@@ -171,7 +171,7 @@ CREATE TABLE roles (
 
 -- Insert sample tenants
 INSERT INTO tenants (id, name, domain, status) VALUES 
-('tenant-001', 'MyCarShop Main Branch', 'mycarshop.com', 'active'),
+('tenant-005', 'MyCarShop Main Branch', 'mycarshop.com', 'active'),
 ('tenant-002', 'AutoService Pro', 'autoservice.pro', 'active'),
 ('tenant-003', 'QuickFix Motors', 'quickfixmotors.com', 'active');
 
@@ -282,7 +282,7 @@ INSERT INTO shops (id, tenant_id, name, address, phone, status) VALUES
 -- MyCarShop shops
 (
     'shop-mycar-001',
-    'tenant-001',
+    'tenant-005',
     'MyCarShop Main Location',
     JSON_OBJECT(
         'street', '456 Main Street',
@@ -296,7 +296,7 @@ INSERT INTO shops (id, tenant_id, name, address, phone, status) VALUES
 ),
 (
     'shop-mycar-002',
-    'tenant-001',
+    'tenant-005',
     'MyCarShop North Branch',
     JSON_OBJECT(
         'street', '789 North Avenue',
@@ -357,27 +357,27 @@ INSERT INTO shops (id, tenant_id, name, address, phone, status) VALUES
 
 -- Map global user to all tenants
 INSERT INTO user_tenants (id, user_id, tenant_id, assigned_role, is_default, can_access_all_shops, created_by) VALUES 
-('ut-global-001', 'global-user-001', 'tenant-001', 'global', TRUE, TRUE, 'global-user-001'),
+('ut-global-001', 'global-user-001', 'tenant-005', 'global', TRUE, TRUE, 'global-user-001'),
 ('ut-global-002', 'global-user-001', 'tenant-002', 'global', FALSE, TRUE, 'global-user-001'),
 ('ut-global-003', 'global-user-001', 'tenant-003', 'global', FALSE, TRUE, 'global-user-001');
 
 -- Map admin users to their respective tenants
 INSERT INTO user_tenants (id, user_id, tenant_id, assigned_role, is_default, can_access_all_shops, created_by) VALUES 
-('ut-admin-001', 'admin-user-001', 'tenant-001', 'admin', TRUE, TRUE, 'global-user-001'),
+('ut-admin-001', 'admin-user-001', 'tenant-005', 'admin', TRUE, TRUE, 'global-user-001'),
 ('ut-admin-002', 'admin-user-002', 'tenant-002', 'admin', TRUE, TRUE, 'global-user-001');
 
 -- Map global user to all shops with full access
 INSERT INTO user_shops (id, user_id, shop_id, tenant_id, assigned_role, is_default, access_level, created_by) VALUES 
-('us-global-001', 'global-user-001', 'shop-mycar-001', 'tenant-001', 'admin', TRUE, 'full', 'global-user-001'),
-('us-global-002', 'global-user-001', 'shop-mycar-002', 'tenant-001', 'admin', FALSE, 'full', 'global-user-001'),
+('us-global-001', 'global-user-001', 'shop-mycar-001', 'tenant-005', 'admin', TRUE, 'full', 'global-user-001'),
+('us-global-002', 'global-user-001', 'shop-mycar-002', 'tenant-005', 'admin', FALSE, 'full', 'global-user-001'),
 ('us-global-003', 'global-user-001', 'shop-auto-001', 'tenant-002', 'admin', FALSE, 'full', 'global-user-001'),
 ('us-global-004', 'global-user-001', 'shop-quick-001', 'tenant-003', 'admin', FALSE, 'full', 'global-user-001'),
 ('us-global-005', 'global-user-001', 'shop-quick-002', 'tenant-003', 'admin', FALSE, 'full', 'global-user-001');
 
 -- Map admin users to their shops
 INSERT INTO user_shops (id, user_id, shop_id, tenant_id, assigned_role, is_default, access_level, created_by) VALUES 
-('us-admin-001', 'admin-user-001', 'shop-mycar-001', 'tenant-001', 'admin', TRUE, 'full', 'global-user-001'),
-('us-admin-002', 'admin-user-001', 'shop-mycar-002', 'tenant-001', 'admin', FALSE, 'full', 'global-user-001'),
+('us-admin-001', 'admin-user-001', 'shop-mycar-001', 'tenant-005', 'admin', TRUE, 'full', 'global-user-001'),
+('us-admin-002', 'admin-user-001', 'shop-mycar-002', 'tenant-005', 'admin', FALSE, 'full', 'global-user-001'),
 ('us-admin-003', 'admin-user-002', 'shop-auto-001', 'tenant-002', 'admin', TRUE, 'full', 'global-user-001');
 
 -- Insert comprehensive role templates for each tenant
@@ -386,7 +386,7 @@ INSERT INTO roles (id, tenant_id, role_name, role_slug, role_description, access
 -- MyCarShop roles
 (
     'role-mycar-admin',
-    'tenant-001',
+    'tenant-005',
     'Shop Administrator',
     'shop-administrator',
     'Full administrative access to shop operations and user management',
@@ -401,7 +401,7 @@ INSERT INTO roles (id, tenant_id, role_name, role_slug, role_description, access
 ),
 (
     'role-mycar-manager',
-    'tenant-001',
+    'tenant-005',
     'Shop Manager',
     'shop-manager',
     'Operational management with limited administrative functions',
@@ -416,7 +416,7 @@ INSERT INTO roles (id, tenant_id, role_name, role_slug, role_description, access
 ),
 (
     'role-mycar-staff',
-    'tenant-001',
+    'tenant-005',
     'Shop Staff',
     'shop-staff',
     'Basic operational access for daily tasks',
